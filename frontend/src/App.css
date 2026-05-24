@@ -1,0 +1,338 @@
+/* ==========================================================================
+   VARIABLES GLOBALES (Para cambiar colores y fuentes desde un solo lugar)
+   ========================================================================== */
+:root {
+    --color-principal: #000000;
+    --color-exito: #27ae60;
+    --color-exito-hover: #219150;
+    --color-error: #e74c3c;
+    --color-texto-oscuro: #2c3e50;
+    --color-texto-mutado: #7f8c8d;
+    --color-fondo-gris: #f8f9fa;
+    --color-borde: #ddd;
+    --fuente-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ==========================================================================
+   ESTILOS BASE Y CONTENEDORES
+   ========================================================================== */
+.container {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: var(--fuente-base);
+}
+
+.card {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.title {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    color: var(--color-texto-oscuro);
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* ==========================================================================
+   NAVEGACIÓN
+   ========================================================================== */
+.nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.btn-nav {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #e0e0e0;
+    transition: 0.3s ease;
+}
+
+.btn-nav.active {
+    background-color: var(--color-principal);
+    color: #fff;
+}
+
+/* ==========================================================================
+   FORMULARIOS e INPUTS
+   ========================================================================== */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.row {
+    display: flex;
+    gap: 15px;
+}
+
+.group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.group-fecha {
+    margin-bottom: 10px;
+}
+
+/* Un pequeño espacio extra para el grupo de la fecha dentro de la estructura */
+.form > .group {
+    margin-bottom: 5px;
+}
+
+label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+}
+
+input, select {
+    width: 100%;
+    box-sizing: border-box; 
+    padding: 10px;
+    border: 1px solid var(--color-borde);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s, outline 0.2s;
+}
+
+input:focus {
+    outline: 2px solid var(--color-exito);
+    border-color: transparent;
+}
+
+/* Caja de totales en Vivo / Formularios */
+.total-box {
+    margin-top: 15px;
+    padding: 20px;
+    background-color: var(--color-fondo-gris);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    border: 1px dashed #ccc;
+}
+
+.total-box strong.neto-positivo {
+    color: var(--color-exito);
+}
+
+.total-box strong.neto-negativo {
+    color: var(--color-error);
+}
+
+/* Botón Guardar */
+.btn-submit {
+    padding: 15px;
+    background-color: var(--color-exito);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-submit:hover {
+    background-color: var(--color-exito-hover);
+}
+
+/* ==========================================================================
+   VISTA HISTORIAL DIARIO
+   ========================================================================== */
+.historial-grafico-contenedor {
+    width: 100%;
+    height: 200px;
+    margin-bottom: 20px;
+}
+
+.historial-lista {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* Scrollbar personalizado para Fedora/Chrome */
+.historial-lista::-webkit-scrollbar {
+    width: 6px;
+}
+.historial-lista::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.historial-item {
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+}
+
+.historial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.historial-acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge {
+    background-color: #d1f2eb;
+    color: #16a085;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.historial-detalle {
+    font-size: 0.9rem;
+    color: var(--color-texto-mutado);
+    line-height: 1.4;
+}
+
+/* Botones circulares de acción (Editar / Eliminar) */
+.btn-accion {
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-accion:hover {
+    transform: scale(1.1);
+}
+
+.btn-editar {
+    background-color: #f0f0f0;
+}
+
+.btn-editar:hover {
+    background-color: #ffe0b2; /* Naranja clarito */
+}
+
+.btn-eliminar {
+    background-color: #ffebee;
+}
+
+.btn-eliminar:hover {
+    background-color: #ffcdd2; /* Rojo clarito */
+}
+
+/* ==========================================================================
+   VISTA ESTADÍSTICAS (Semanales y Mensuales)
+   ========================================================================== */
+.est-subtitulo {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.est-grafico-contenedor {
+    width: 100%;
+    height: 220px;
+    margin-bottom: 20px;
+}
+
+.est-lista-desglose {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 25px;
+}
+
+.est-item-semana {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--color-fondo-gris);
+    border-radius: 6px;
+}
+
+.est-item-semana.positivo {
+    border-left: 4px solid var(--color-exito);
+}
+
+.est-item-semana.negativo {
+    border-left: 4px solid var(--color-error);
+}
+
+.est-texto-semana {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.est-monto-positivo {
+    font-size: 15px;
+    color: var(--color-exito);
+}
+
+.est-monto-negativo {
+    font-size: 15px;
+    color: var(--color-error);
+}
+
+/* Tarjeta Acumuladora Mensual */
+.tarjeta-mensual {
+    background: #f4f9f4;
+    border: 1px solid #d4edda;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.tarjeta-mensual-contenido {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tarjeta-mensual-label {
+    font-size: 13px;
+    color: #555;
+    display: block;
+}
+
+.tarjeta-mensual-monto {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.tarjeta-mensual-monto.positivo {
+    color: var(--color-exito);
+}
+
+.tarjeta-mensual-monto.negativo {
+    color: var(--color-error);
+}
