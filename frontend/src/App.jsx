@@ -10,7 +10,15 @@ function App() {
   const [vista, setVista] = useState('carga');
   const [jornadas, setJornadas] = useState([]);
   // Buscamos la fecha de hoy en formato YYYY-MM-DD para el input html
-  const hoyFormateado = new Date().toISOString().split('T')[0];
+  // const hoyFormateado = new Date().toISOString().split('T')[0];
+
+  const fecha = new Date();
+const anio = fecha.getFullYear();
+// Sumamos 1 porque los meses en JavaScript van de 0 (enero) a 11 (diciembre)
+const mes = String(fecha.getMonth() + 1).padStart(2, '0'); 
+const dia = String(fecha.getDate()).padStart(2, '0');
+
+const hoyFormateado = `${anio}-${mes}-${dia}`;
 
   const [formData, setFormData] = useState({
     fechaElegida: hoyFormateado, // <-- Nueva variable
