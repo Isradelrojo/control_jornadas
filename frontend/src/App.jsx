@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from './api';
-import { Fuel, PlusCircle, History, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { PlusCircle, History, BarChart3 } from 'lucide-react';
 import './App.css';
 import { VistaHistorial, VistaCarga, VistaEstadisticas } from "./components";
 
@@ -9,19 +8,16 @@ function App() {
 
   const [vista, setVista] = useState('carga');
   const [jornadas, setJornadas] = useState([]);
-  // Buscamos la fecha de hoy en formato YYYY-MM-DD para el input html
-  // const hoyFormateado = new Date().toISOString().split('T')[0];
 
+  // Formateamos el día de hoy de forma local estricta
   const fecha = new Date();
-const anio = fecha.getFullYear();
-// Sumamos 1 porque los meses en JavaScript van de 0 (enero) a 11 (diciembre)
-const mes = String(fecha.getMonth() + 1).padStart(2, '0'); 
-const dia = String(fecha.getDate()).padStart(2, '0');
-
-const hoyFormateado = `${anio}-${mes}-${dia}`;
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const hoyFormateado = `${anio}-${mes}-${dia}`;
 
   const [formData, setFormData] = useState({
-    fechaElegida: hoyFormateado, // <-- Nueva variable
+    fechaElegida: hoyFormateado,
     ingreso_uber: 0,
     ingreso_cabify: 0,
     gasto_combustible: 0,
@@ -43,35 +39,30 @@ const hoyFormateado = `${anio}-${mes}-${dia}`;
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.name ? e : e.target; // Captura segura del elemento
+    const { name, value } = e.name ? e : e.target;
 
-    // 1. Si es la fecha, la dejamos pasar directo sin validar números
-    if (name === 'fechaElegida') {
-      setFormData({ ...formData, [name]: value });
-      return; // Corta acá para que no siga a las reglas de números
-    }
-
-    // 2. Si es el detalle extra (texto), también pasa directo
-    if (name === 'detalle_extra') {
+    if (name === 'fechaElegida' || name === 'detalle_extra') {
       setFormData({ ...formData, [name]: value });
       return;
     }
 
-    // 3. Para todo lo demás (Uber, Cabify, Nafta, Extras), validamos que sea número
-    if (isNaN(value)) return; // Si meten letras, no hace nada
+    if (isNaN(value)) return;
     setFormData({ ...formData, [name]: value });
   };
 
   const totalEnVivo = (Number(formData.ingreso_uber) + Number(formData.ingreso_cabify))
     - Number(formData.gasto_combustible) - Number(formData.gasto_extra);
 
+  // 🛠️ CORREGIDO: Evita el descalce de 3 horas al editar
   const manejarEditar = (jornada) => {
-    // Pasamos la fecha de la base de datos (ISO) al formato YYYY-MM-DD que entiende el calendario
-    const fechaFormateada = new Date(jornada.fecha).toISOString().split('T')[0];
-
-
+    const fechaObj = new Date(jornada.fecha);
+    const anioE = fechaObj.getUTCFullYear();
+    const mesE = String(fechaObj.getUTCMonth() + 1).padStart(2, '0');
+    const diaE = String(fechaObj.getUTCDate()).padStart(2, '0');
+    const fechaFormateada = `${anioE}-${mesE}-${diaE}`;
 
     setFormData({
+      _id: jornada._id, // Aseguramos pasar el ID para que el backend sepa que es edición
       fechaElegida: fechaFormateada,
       ingreso_uber: jornada.ingreso_uber,
       ingreso_cabify: jornada.ingreso_cabify,
@@ -80,18 +71,15 @@ const hoyFormateado = `${anio}-${mes}-${dia}`;
       detalle_extra: jornada.detalle_extra || ''
     });
 
-    // Llevamos al usuario al formulario
     setVista('carga');
   };
 
   const manejarEliminar = async (id) => {
-    console.log("El ID que llegó al botón es:", id); // <-- Meté esta línea de prueba
     if (!confirm("⚠️ ¿Estás seguro?")) return;
-
     try {
       await api.delete(`/jornadas/${id}`);
       alert("🗑️ Jornada eliminada");
-      cargarHistorial(); // Refrescamos la lista al toque
+      cargarHistorial();
     } catch (err) {
       alert("❌ Error al eliminar la jornada");
     }
@@ -99,114 +87,63 @@ const hoyFormateado = `${anio}-${mes}-${dia}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // 1. Validamos que no se intente mandar una jornada vacía en $0
+
     const ingresosTotales = Number(formData.ingreso_uber) + Number(formData.ingreso_cabify);
     if (ingresosTotales === 0) {
-      alert("⚠️ No podés guardar una jornada vacía. Si no trabajaste este día, simplemente saltealo.");
+      alert("⚠️ No podés guardar una jornada vacía.");
       return;
     }
 
-    // 2. Alerta por pérdida
     if (totalEnVivo < 0 && !confirm("¿La jornada dio pérdida? ¿Deseas guardar igual?")) return;
 
     try {
-      // Mandamos de forma dinámica si es edición o no basándonos en si existe el _id
-      const datosEnviar = { 
-        ...formData, 
-        esEdicion: formData._id ? true : false 
+      const datosEnviar = {
+        ...formData,
+        esEdicion: formData._id ? true : false
       };
 
       await api.post('/jornadas', datosEnviar);
       alert('✅ Datos guardados correctamente');
-      
-      // Limpieza estándar si todo sale bien
-      setFormData({ 
-        fechaElegida: hoyFormateado, 
-        ingreso_uber: 0, 
-        ingreso_cabify: 0, 
-        gasto_combustible: 0, 
-        gasto_extra: 0, 
-        detalle_extra: '' 
+
+      setFormData({
+        fechaElegida: hoyFormateado,
+        ingreso_uber: 0,
+        ingreso_cabify: 0,
+        gasto_combustible: 0,
+        gasto_extra: 0,
+        detalle_extra: ''
       });
-      
+
       cargarHistorial();
       setVista('historial');
-    } catch (err) { 
-      // 3. Capturamos si el backend nos frena porque quisimos pisar un día existente
+    } catch (err) {
       if (err.response && err.response.status === 400) {
         alert(`❌ ${err.response.data.mensaje || 'Este día ya fue cargado anteriormente.'}`);
-        
-        // 🌟 ACÁ ESTÁ EL CAMBIO: Si da error por día repetido, limpiamos los números en vivo
         setFormData({
-          ...formData, // Mantenemos la fecha elegida para que no se te mueva el calendario de donde estabas
-          ingreso_uber: 0, 
-          ingreso_cabify: 0, 
-          gasto_combustible: 0, 
-          gasto_extra: 0, 
-          detalle_extra: '' 
+          ...formData,
+          ingreso_uber: 0,
+          ingreso_cabify: 0,
+          gasto_combustible: 0,
+          gasto_extra: 0,
+          detalle_extra: ''
         });
-
       } else {
-        alert('❌ Error en el servidor'); 
+        alert('❌ Error en el servidor');
       }
     }
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-    
-  //   // 1. Validamos que no se intente mandar una jornada vacía en $0
-  //   const ingresosTotales = Number(formData.ingreso_uber) + Number(formData.ingreso_cabify);
-  //   if (ingresosTotales === 0) {
-  //     alert("⚠️ No podés guardar una jornada vacía. Si no trabajaste este día, simplemente saltealo.");
-  //     return;
-  //   }
-
-  //   // 2. Alerta por pérdida
-  //   if (totalEnVivo < 0 && !confirm("¿La jornada dio pérdida? ¿Deseas guardar igual?")) return;
-
-  //   try {
-  //     // 🌟 ACÁ ESTÁ EL TRUCO MAGICO:
-  //     // Si formData tiene un _id, significa que viene del historial (esEdicion: true).
-  //     // Si NO tiene _id, es una carga limpia desde cero (esEdicion: false).
-  //     const datosEnviar = { 
-  //       ...formData, 
-  //       esEdicion: formData._id ? true : false 
-  //     };
-
-  //     // Le mandamos 'datosEnviar' al servidor en vez de 'formData' a secas
-  //     await api.post('/jornadas', datosEnviar);
-  //     alert('✅ Datos guardados correctamente');
-      
-  //     setFormData({ 
-  //       fechaElegida: hoyFormateado, 
-  //       ingreso_uber: 0, 
-  //       ingreso_cabify: 0, 
-  //       gasto_combustible: 0, 
-  //       gasto_extra: 0, 
-  //       detalle_extra: '' 
-  //     });
-      
-  //     cargarHistorial();
-  //     setVista('historial');
-  //   } catch (err) { 
-  //     // 3. Capturamos si el backend nos frena porque quisimos pisar un día sin estar en modo edición
-  //     if (err.response && err.response.status === 400) {
-  //       alert(`❌ ${err.response.data.mensaje || 'Este día ya fue cargado anteriormente.'}`);
-  //     } else {
-  //       alert('❌ Error en el servidor'); 
-  //     }
-  //   }
-  // };
-
+  // 🛠️ CORREGIDO: Forzamos zona horaria UTC para que los gráficos muestren el día correcto
   const cargarHistorial = async () => {
     try {
       const res = await api.get('/jornadas');
-      // Formatear fechas para el gráfico (ej: "Lun 12")
       const datosFormateados = res.data.map(j => ({
         ...j,
-        fechaCorta: new Date(j.fecha).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
+        fechaCorta: new Date(j.fecha).toLocaleDateString('es-AR', {
+          timeZone: 'UTC',
+          weekday: 'short',
+          day: 'numeric'
+        })
       })).reverse();
       setJornadas(datosFormateados);
     } catch (err) { console.error(err); }
@@ -223,8 +160,9 @@ const hoyFormateado = `${anio}-${mes}-${dia}`;
         <button onClick={() => setVista('historial')} className={`btn-nav ${vista === 'historial' ? 'active' : ''}`}>
           <History size={18} /> Historial
         </button>
+        {/* 🛠️ CORREGIDO: quitamos comillas en size="{18}" */}
         <button onClick={() => setVista('estadisticas')} className={`btn-nav ${vista === 'estadisticas' ? 'active' : ''}`}>
-          <BarChart3 size="{18}" /> Semanal/Mensual
+          <BarChart3 size={18} /> Semanal/Mensual
         </button>
       </nav>
 

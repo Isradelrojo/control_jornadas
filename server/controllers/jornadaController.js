@@ -1,19 +1,3 @@
-// const Jornada = require('../models/Jornada');
-
-// // Crear una nueva jornada
-// exports.crearJornada = async (req, res) => {
-//     try {
-//         const nuevaJornada = new Jornada(req.body);
-//         await nuevaJornada.save();
-//         res.status(201).json({ mensaje: "Jornada guardada con éxito", data: nuevaJornada });
-//     } catch (error) {
-//         res.status(400).json({ mensaje: "Error al guardar la jornada", error: error.message });
-//     }
-// };
-
-
-
-
 
 const Jornada = require('../models/Jornada');
 
@@ -27,8 +11,10 @@ exports.crearOModificarJornada = async (req, res) => {
         const [anio, mes, dia] = stringFecha.split('-');
 
         // 2. Forzamos a crear la fecha usando valores locales
-        const inicioDia = new Date(Number(anio), Number(mes) - 1, Number(dia), 0, 0, 0, 0);
-        const finDia    = new Date(Number(anio), Number(mes) - 1, Number(dia), 23, 59, 59, 999);
+        // const inicioDia = new Date(Number(anio), Number(mes) - 1, Number(dia), 0, 0, 0, 0);
+        // const finDia    = new Date(Number(anio), Number(mes) - 1, Number(dia), 23, 59, 59, 999);
+        const inicioDia = new Date(Date.UTC(Number(anio), Number(mes) - 1, Number(dia), 0, 0, 0, 0));
+        const finDia = new Date(Date.UTC(Number(anio), Number(mes) - 1, Number(dia), 23, 59, 59, 999));
 
         // 3. Buscamos si ya existe en ese rango
         let jornadaExistente = await Jornada.findOne({
@@ -38,8 +24,8 @@ exports.crearOModificarJornada = async (req, res) => {
         if (jornadaExistente) {
             // 🌟 CANDADO CRÍTICO: Si el día existe pero NO viene del botón de editar, rebotamos la petición
             if (!esEdicion) {
-                return res.status(400).json({ 
-                    mensaje: "Ese día ya tiene una jornada registrada. Si querés modificarla, hacelo desde el Historial Diario." 
+                return res.status(400).json({
+                    mensaje: "Ese día ya tiene una jornada registrada. Si querés modificarla, hacelo desde el Historial Diario."
                 });
             }
 
@@ -52,11 +38,11 @@ exports.crearOModificarJornada = async (req, res) => {
 
             await jornadaExistente.save();
             return res.status(200).json({ mensaje: "Jornada actualizada con éxito", data: jornadaExistente });
-            
+
         } else {
             // Creamos una nueva jornada de forma normal
             const nuevaJornada = new Jornada({
-                fecha: inicioDia, 
+                fecha: inicioDia, // <-- Nos aseguramos de que guarde el inicioDia que es UTC puro
                 ingreso_uber: Number(ingreso_uber || 0),
                 ingreso_cabify: Number(ingreso_cabify || 0),
                 gasto_combustible: Number(gasto_combustible || 0),
