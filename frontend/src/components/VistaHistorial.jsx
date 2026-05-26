@@ -1,6 +1,3 @@
-
-
-
 // src/components/VistaHistorial.jsx
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
@@ -32,7 +29,10 @@ const VistaHistorial = ({ jornadas, manejarEditar, manejarEliminar }) => {
         {jornadas.slice().reverse().map(j => (
           <div key={j._id} className="historial-item">
             <div className="historial-header">
-              <strong>{new Date(j.fecha).toLocaleDateString()}</strong>
+              {/* 🛠️ CORREGIDO: Forzamos timeZone UTC para evitar el desfase en la lista */}
+              <strong>
+                {new Date(j.fecha).toLocaleDateString('es-AR', { timeZone: 'UTC' })}
+              </strong>
 
               <div className="historial-acciones">
                 <span className="badge">${j.total_dia}</span>
