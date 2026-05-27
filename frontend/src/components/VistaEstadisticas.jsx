@@ -5,23 +5,16 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 
 const VistaEstadisticas = ({ jornadas }) => {
 
-  // --- FUNCIÓN: Agrupar jornadas por semanas (Lunes a Domingo) ---
+  // --- 1. FUNCIÓN: Agrupar por semanas (Para el Gráfico) ---
   const procesarDatosSemanales = () => {
     const semanas = {};
-
-    // Ordenamos las jornadas de la más vieja a la más nueva antes de procesar
     const jornadasOrdenadas = [...jornadas].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
     jornadasOrdenadas.forEach(j => {
-      // 🛠️ CORREGIDO: Leemos la fecha en formato UTC puro para evitar el salto de día
       const fechaBase = new Date(j.fecha);
-      const anio = fechaBase.getUTCFullYear();
-      const mes = fechaBase.getUTCMonth();
-      const dia = fechaBase.getUTCDate();
+      const fechaJornada = new Date(Date.UTC(fechaBase.getUTCFullYear(), fechaBase.getUTCMonth(), fechaBase.getUTCDate()));
       
-      const fechaJornada = new Date(Date.UTC(anio, mes, dia));
-      
-      const diaSemana = fechaJornada.getUTCDay(); // 0 = Domingo, 1 = Lunes
+      const diaSemana = fechaJornada.getUTCDay();
       const diferenciaALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
       
       const lunes = new Date(fechaJornada);
@@ -36,33 +29,66 @@ const VistaEstadisticas = ({ jornadas }) => {
       const netoDia = (Number(j.ingreso_uber) + Number(j.ingreso_cabify)) 
         - Number(j.gasto_combustible) - Number(j.gasto_extra);
 
-      if (!semanas[etiquetaSemana]) {
-        semanas[etiquetaSemana] = 0;
-      }
+      if (!semanas[etiquetaSemana]) semanas[etiquetaSemana] = 0;
       semanas[etiquetaSemana] += netoDia;
     });
 
-    // Convertimos a array estructurado
-    const resultado = Object.keys(semanas).map(semana => ({
+    return Object.keys(semanas).map(semana => ({
       semana,
       totalNeto: semanas[semana]
-    }));
+    })).slice(-4); // Top de 4 semanas para el gráfico
+  };
 
-    // 🛠️ CORREGIDO: Devolvemos las últimas 4 semanas ordenadas cronológicamente (Vieja a Nueva)
-    return resultado.slice(-4);
+  // --- 2. FUNCIÓN: Agrupar por Mes Calendario Puro (Para la lista y el total) ---
+  const procesarDatosMensuales = () => {
+    const meses = {};
+    // Ordenamos cronológicamente
+    const jornadasOrdenadas = [...jornadas].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    jornadasOrdenadas.forEach(j => {
+      const fechaBase = new Date(j.fecha);
+      
+      // Obtenemos el mes y año en formato UTC puro
+      const anio = fechaBase.getUTCFullYear();
+      const mesIndex = fechaBase.getUTCMonth(); // 0 = Enero, 1 = Febrero...
+
+      // Creamos una etiqueta única para el objeto (ej: "2026-04" para ordenar fácil)
+      const claveMes = `${anio}-${String(mesIndex + 1).padStart(2, '0')}`;
+
+      // Nombre del mes legible para mostrar (ej: "Mayo 2026")
+      const nombreMes = fechaBase.toLocaleDateString('es-AR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      // Ponemos la primera letra en mayúscula para que quede prolijo
+      const etiquetaMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+
+      const netoDia = (Number(j.ingreso_uber) + Number(j.ingreso_cabify)) 
+        - Number(j.gasto_combustible) - Number(j.gasto_extra);
+
+      if (!meses[claveMes]) {
+        meses[claveMes] = { label: etiquetaMes, totalNeto: 0 };
+      }
+      meses[claveMes].totalNeto += netoDia;
+    });
+
+    // Convertimos el objeto en un array ordenado por su clave año-mes
+    return Object.keys(meses).map(clave => ({
+      mes: meses[clave].label,
+      totalNeto: meses[clave].totalNeto
+    }));
   };
 
   const datosSemanales = procesarDatosSemanales();
-  
-  // El total mensual acumulado sumará solo el bloque de las últimas 4 semanas visibles
-  const totalMensualAcumulado = datosSemanales.reduce((acc, curr) => acc + curr.totalNeto, 0);
+  const datosMensuales = procesarDatosMensuales();
+
+  // Sacamos el neto del último mes registrado para la tarjeta principal (o 0 si no hay datos)
+  const totalMensualActual = datosMensuales.length > 0 ? datosMensuales[datosMensuales.length - 1].totalNeto : 0;
+  const nombreMesActual = datosMensuales.length > 0 ? datosMensuales[datosMensuales.length - 1].mes : "Mes Actual";
 
   return (
     <div className="card">
-      <h2 className="title"><BarChart3 size={20} /> Rendimiento por Semanas</h2>
-      <p className="est-subtitulo">Resultados netos agrupados de Lunes a Domingo</p>
+      <h2 className="title"><BarChart3 size={20} /> Rendimiento Semanal</h2>
+      <p className="est-subtitulo">Tendencia de las últimas 4 semanas de trabajo</p>
 
-      {/* Gráfico Semanal (Cronológico: de más vieja a más nueva) */}
+      {/* Gráfico Semanal */}
       <div className="est-grafico-contenedor">
         <ResponsiveContainer>
           <BarChart data={datosSemanales}>
@@ -81,18 +107,20 @@ const VistaEstadisticas = ({ jornadas }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Lista Detallada (La más nueva arriba para control rápido) */}
+      {/* Lista Desglose Mensual */}
       <h3 className="title">
-        <Calendar size={16} /> Desglose de Caja Semanal
+        <Calendar size={16} /> Desglose de Caja Mensual
       </h3>
+      <p className="est-subtitulo">Ganancia neta acumulada por mes calendario</p>
       
       <div className="est-lista-desglose">
-        {[...datosSemanales].reverse().map((item, idx) => (
+        {/* Mostramos los meses al revés (el mes más nuevo arriba de todo) */}
+        {[...datosMensuales].reverse().map((item, idx) => (
           <div 
             key={idx} 
             className={`est-item-semana ${item.totalNeto >= 0 ? 'positivo' : 'negativo'}`}
           >
-            <span className="est-texto-semana">Semana {item.semana}</span>
+            <span className="est-texto-semana">{item.mes}</span>
             <strong className={item.totalNeto >= 0 ? 'est-monto-positivo' : 'est-monto-negativo'}>
               {item.totalNeto >= 0 ? `+$${item.totalNeto}` : `-$${Math.abs(item.totalNeto)}`}
             </strong>
@@ -100,14 +128,14 @@ const VistaEstadisticas = ({ jornadas }) => {
         ))}
       </div>
 
-      {/* Tarjeta de Total Mensual (Cierre de div corregido) */}
+      {/* Tarjeta de Total del Mes en Curso */}
       <div className="tarjeta-mensual">
         <div className="tarjeta-mensual-contenido">
           <Wallet size={24} color="#27ae60" />
           <div>
-            <p className="tarjeta-mensual-titulo">Total Acumulado (4 Semanas)</p>
-            <h3 className={`tarjeta-mensual-monto ${totalMensualAcumulado >= 0 ? 'positivo' : 'negativo'}`}>
-              ${totalMensualAcumulado}
+            <p className="tarjeta-mensual-titulo">Total Neto ({nombreMesActual})</p>
+            <h3 className={`tarjeta-mensual-monto ${totalMensualActual >= 0 ? 'positivo' : 'negativo'}`}>
+              ${totalMensualActual}
             </h3>
           </div>
         </div>
